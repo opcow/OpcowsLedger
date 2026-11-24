@@ -1,0 +1,7 @@
+package-as: OpcowsAuctionLedger
+
+manual-changelog: CHANGELOG.md
+
+ignore:
+  - docs
+  - .claude
