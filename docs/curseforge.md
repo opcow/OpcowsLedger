@@ -1,4 +1,4 @@
-# Opcow's Auction Ledger
+# Opcow's Ledger
 
 **A gold ledger for WoW: Forever.** See what each character makes selling and spends buying, at the auction house, at vendors, in trades and by COD mail, per item and per category you set up.
 
@@ -13,7 +13,7 @@ Every sale and purchase says where it happened and who with. When one covers sev
 
 ## The window
 
-Open it with `/oal`, the minimap button or the addon compartment.
+Open it with `/ol`, the minimap button or the addon compartment.
 
 - **Summary:** earned and spent today, in the last 7 and 30 days, and all time, plus your latest sales and purchases.
 - **Items:** every item you've sold or bought, with how many, the gold, and the average price of one. Sort by any column.
@@ -24,9 +24,9 @@ Each character has its own ledger; categories are shared by all your characters.
 
 ## Commands
 
-- `/oal` opens the ledger.
-- `/oal minimap` shows or hides the minimap button.
-- `/oal search <word>` lists the items in your bags and bank that match.
-- `/oal mail` lists the mail in your open mailbox and what it would count.
-- `/oal debug` prints each sale and purchase as it's counted, and what isn't and why.
-- `/oal clear` deletes this character's sales and purchases (it asks first).
+- `/ol` opens the ledger.
+- `/ol minimap` shows or hides the minimap button.
+- `/ol search <word>` lists the items in your bags and bank that match.
+- `/ol mail` lists the mail in your open mailbox and what it would count.
+- `/ol debug` prints each sale and purchase as it's counted, and what isn't and why.
+- `/ol clear` deletes this character's sales and purchases (it asks first).

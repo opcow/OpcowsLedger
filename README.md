@@ -1,4 +1,4 @@
-# Opcow's Auction Ledger
+# Opcow's Ledger
 
 Keeps track of what each character makes selling and spends buying, at the auction house, at
 vendors, in trades with other players and by COD mail, per item and per category you set up. Each
@@ -25,7 +25,7 @@ the items' vendor prices, or evenly when the game doesn't know them.
 
 ## The window
 
-Open it with `/oal`, the minimap button or the addon compartment.
+Open it with `/ol`, the minimap button or the addon compartment.
 
 - **Summary:** earned and spent today, in the last 7 and 30 days, and all time, plus your latest
   sales and purchases, with where each happened and who with.
@@ -50,9 +50,9 @@ Each character has its own ledger. Categories are shared by all your characters.
 
 ## Commands
 
-- `/oal` opens the ledger.
-- `/oal minimap` shows or hides the minimap button.
-- `/oal search <word>` lists the items in your bags and bank that match, ex: `/oal search mining`.
-- `/oal mail` lists the auction house and COD mail in your open mailbox and what it would count.
-- `/oal debug` prints each sale and purchase as it's counted, and what isn't counted and why.
-- `/oal clear` deletes this character's sales and purchases (it asks first).
+- `/ol` opens the ledger.
+- `/ol minimap` shows or hides the minimap button.
+- `/ol search <word>` lists the items in your bags and bank that match, ex: `/ol search mining`.
+- `/ol mail` lists the auction house and COD mail in your open mailbox and what it would count.
+- `/ol debug` prints each sale and purchase as it's counted, and what isn't counted and why.
+- `/ol clear` deletes this character's sales and purchases (it asks first).

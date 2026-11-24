@@ -14,4 +14,4 @@
 - **Find in bags...** in the Categories tab searches your bags and bank like the bags' search box
   (ex: "mining"), lists what it finds ticked, and adds the ones you keep ticked. The bank's contents
   are remembered at each visit so it can be searched from anywhere.
-- `/oal`, `/oal minimap`, `/oal search`, `/oal mail`, `/oal debug` and `/oal clear`.
+- `/ol`, `/ol minimap`, `/ol search`, `/ol mail`, `/ol debug` and `/ol clear`.

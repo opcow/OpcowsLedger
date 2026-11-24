@@ -1,7 +1,7 @@
 -- The ledger window (Summary, Items and Categories tabs), the minimap button and the addon
 -- compartment entry. The window is built on first use.
 
-local OAL = OpcowsAuctionLedger
+local OAL = OpcowsLedger
 local WIDTH, HEIGHT = 680, 540
 local ROW_HEIGHT = 20
 local ICON = "Interface\\Icons\\INV_Misc_Coin_01"
@@ -806,7 +806,7 @@ end
 local TABS = { { "summary", "Summary" }, { "items", "Items" }, { "categories", "Categories" } }
 
 local function CreateWindow()
-    local f = CreateFrame("Frame", "OpcowsAuctionLedgerWindow", UIParent, "BasicFrameTemplateWithInset")
+    local f = CreateFrame("Frame", "OpcowsLedgerWindow", UIParent, "BasicFrameTemplateWithInset")
     win = f
     f:SetSize(WIDTH, HEIGHT)
     f:SetPoint("CENTER")
@@ -819,14 +819,14 @@ local function CreateWindow()
     f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
     f:Hide()
-    table.insert(UISpecialFrames, "OpcowsAuctionLedgerWindow")
+    table.insert(UISpecialFrames, "OpcowsLedgerWindow")
 
     local title = f.TitleText
     if not title then
         title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         title:SetPoint("TOP", 0, -5)
     end
-    title:SetText("Opcow's Auction Ledger")
+    title:SetText("Opcow's Ledger")
 
     local who = Label(f, "", "GameFontHighlightSmall")
     who:SetPoint("TOPLEFT", 16, -32)
@@ -923,20 +923,20 @@ end
 
 -- addon compartment (the addons button by the minimap) -------------------------------------------
 
-function OpcowsAuctionLedger_OnAddonCompartmentClick()
+function OpcowsLedger_OnAddonCompartmentClick()
     OAL.ToggleWindow()
 end
 
-function OpcowsAuctionLedger_OnAddonCompartmentEnter(_, button)
+function OpcowsLedger_OnAddonCompartmentEnter(_, button)
     GameTooltip:SetOwner(button, "ANCHOR_LEFT")
-    GameTooltip:SetText("Opcow's Auction Ledger")
+    GameTooltip:SetText("Opcow's Ledger")
     GameTooltip:AddLine("Click: open the ledger", 1, 1, 1)
     local earned, spent = OAL.Totals(OAL.Since("today"))
     GameTooltip:AddLine("Today: earned " .. OAL.Money(earned) .. ", spent " .. OAL.Money(spent), 0.5, 0.5, 0.5)
     GameTooltip:Show()
 end
 
-function OpcowsAuctionLedger_OnAddonCompartmentLeave()
+function OpcowsLedger_OnAddonCompartmentLeave()
     GameTooltip:Hide()
 end
 
@@ -951,7 +951,7 @@ local function PlaceMinimapButton()
 end
 
 local function CreateMinimapButton()
-    local b = CreateFrame("Button", "OpcowsAuctionLedgerMinimapButton", Minimap)
+    local b = CreateFrame("Button", "OpcowsLedgerMinimapButton", Minimap)
     -- same layout as LibDBIcon so it matches other addons' buttons
     b:SetSize(31, 31)
     b:SetFrameStrata("MEDIUM")
@@ -980,9 +980,9 @@ local function CreateMinimapButton()
     border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     border:SetPoint("TOPLEFT")
 
-    b:SetScript("OnClick", function() OpcowsAuctionLedger_OnAddonCompartmentClick() end)
-    b:SetScript("OnEnter", function(self) OpcowsAuctionLedger_OnAddonCompartmentEnter(nil, self) end)
-    b:SetScript("OnLeave", OpcowsAuctionLedger_OnAddonCompartmentLeave)
+    b:SetScript("OnClick", function() OpcowsLedger_OnAddonCompartmentClick() end)
+    b:SetScript("OnEnter", function(self) OpcowsLedger_OnAddonCompartmentEnter(nil, self) end)
+    b:SetScript("OnLeave", OpcowsLedger_OnAddonCompartmentLeave)
     b:SetScript("OnDragStart", function(self)
         GameTooltip:Hide()
         self:SetScript("OnUpdate", function()

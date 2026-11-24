@@ -22,5 +22,5 @@ jobs:
 
       - uses: BigWigsMods/packager@v2
         with:
-          # zip and CurseForge name, ex: OpcowsAuctionLedger-v0.1.0-forever
+          # zip and CurseForge name, ex: OpcowsLedger-v0.1.0-forever
           args: -n "{package-name}-{project-version}{classic}:{package-name}-{project-version}{classic}"

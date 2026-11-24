@@ -1,4 +1,4 @@
--- Opcow's Auction Ledger: keeps what each character makes selling and spends buying, per item and
+-- Opcow's Ledger: keeps what each character makes selling and spends buying, per item and
 -- per category the player sets up. Each entry says where it happened (e.src):
 --   "ah"     the auction house (old entries have no src and are this)
 --   "vendor" a merchant: selling, buying, buying back
@@ -11,8 +11,8 @@
 -- TakeInboxItem and AutoLootMailItem, so it works with Blizzard's mailbox and with mail addons.
 -- Vendor and trade entries are described where they're read, further down.
 
-OpcowsAuctionLedger = OpcowsAuctionLedger or {}
-local OAL = OpcowsAuctionLedger
+OpcowsLedger = OpcowsLedger or {}
+local OAL = OpcowsLedger
 
 local DAY = 24 * 60 * 60
 -- the periods the window can show, in the order its button cycles through them
@@ -32,12 +32,12 @@ local function FromSource(e, src)
     return not src or src == "all" or OAL.Source(e) == src
 end
 
-local db    -- OpcowsAuctionLedgerDB: { chars = { [key] = { log } }, cats, minimap, debug }
+local db    -- OpcowsLedgerDB: { chars = { [key] = { log } }, cats, minimap, debug }
 local char  -- this character's part of it
 local charKey
 
 function OAL.Print(msg)
-    print("|cff33ff99Auction Ledger:|r " .. msg)
+    print("|cff33ff99Ledger:|r " .. msg)
 end
 
 function OAL.Debug(msg)
@@ -1015,12 +1015,12 @@ end
 -- slash command ----------------------------------------------------------------------------------
 
 local function Help()
-    OAL.Print("/oal opens the ledger.")
-    OAL.Print("/oal minimap shows or hides the minimap button.")
-    OAL.Print("/oal debug prints each sale and purchase as it's counted, and what isn't counted and why.")
-    OAL.Print("/oal search <word> lists the items in your bags and bank that match, ex: /oal search mining")
-    OAL.Print("/oal mail lists the auction house and COD mail in your open mailbox and what it would count.")
-    OAL.Print("/oal clear deletes this character's sales and purchases (it asks first).")
+    OAL.Print("/ol opens the ledger.")
+    OAL.Print("/ol minimap shows or hides the minimap button.")
+    OAL.Print("/ol debug prints each sale and purchase as it's counted, and what isn't counted and why.")
+    OAL.Print("/ol search <word> lists the items in your bags and bank that match, ex: /ol search mining")
+    OAL.Print("/ol mail lists the auction house and COD mail in your open mailbox and what it would count.")
+    OAL.Print("/ol clear deletes this character's sales and purchases (it asks first).")
 end
 
 local function Slash(msg)
@@ -1028,7 +1028,7 @@ local function Slash(msg)
     cmd = cmd:lower()
     if cmd == "search" then
         if rest == "" then
-            OAL.Print("Type what to look for, ex: /oal search mining")
+            OAL.Print("Type what to look for, ex: /ol search mining")
             return
         end
         OAL.Find(rest, function(results, gameSearch)
@@ -1081,8 +1081,8 @@ end
 -- loading ----------------------------------------------------------------------------------------
 
 local function Load()
-    OpcowsAuctionLedgerDB = OpcowsAuctionLedgerDB or {}
-    db = OpcowsAuctionLedgerDB
+    OpcowsLedgerDB = OpcowsLedgerDB or {}
+    db = OpcowsLedgerDB
     db.chars = db.chars or {}
     db.cats = db.cats or {}
     db.minimap = db.minimap or {}
@@ -1122,13 +1122,14 @@ events:RegisterEvent("UI_INFO_MESSAGE")
 for event in pairs(TRADE_EVENTS) do pcall(events.RegisterEvent, events, event) end
 events:SetScript("OnEvent", function(self, event, arg, arg2)
     if event == "ADDON_LOADED" then
-        if arg ~= "OpcowsAuctionLedger" then return end
+        if arg ~= "OpcowsLedger" then return end
         self:UnregisterEvent("ADDON_LOADED")
         Load()
         HookTakes()
         HookVendor()
-        SLASH_OPCOWSAUCTIONLEDGER1 = "/oal"
-        SlashCmdList.OPCOWSAUCTIONLEDGER = Slash
+        SLASH_OPCOWSLEDGER1 = "/ol"
+        SLASH_OPCOWSLEDGER2 = "/oal"
+        SlashCmdList.OPCOWSLEDGER = Slash
     elseif event == "PLAYER_LOGIN" then
         MoneyChanged()  -- the gold you start with, for working out what each change was
         OAL.UpdateMinimap()
