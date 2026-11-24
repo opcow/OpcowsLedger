@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="70%">
+      <stop offset="0" stop-color="#2a2350"/>
+      <stop offset="0.6" stop-color="#171331"/>
+      <stop offset="1" stop-color="#0b0918"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff3b0"/>
+      <stop offset="0.35" stop-color="#e2b048"/>
+      <stop offset="0.7" stop-color="#a8761c"/>
+      <stop offset="1" stop-color="#f0cf6a"/>
+    </linearGradient>
+    <linearGradient id="cover" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a2a1c"/>
+      <stop offset="1" stop-color="#3e1009"/>
+    </linearGradient>
+    <linearGradient id="pageL" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f6e7c1"/>
+      <stop offset="0.85" stop-color="#ecd7a4"/>
+      <stop offset="1" stop-color="#c9ad74"/>
+    </linearGradient>
+    <linearGradient id="pageR" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#f6e7c1"/>
+      <stop offset="0.85" stop-color="#ecd7a4"/>
+      <stop offset="1" stop-color="#c9ad74"/>
+    </linearGradient>
+    <linearGradient id="coinFace" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1a8"/>
+      <stop offset="0.5" stop-color="#f0bf3c"/>
+      <stop offset="1" stop-color="#b98317"/>
+    </linearGradient>
+    <linearGradient id="coinEdge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8a5c0e"/>
+      <stop offset="0.5" stop-color="#d9a12c"/>
+      <stop offset="1" stop-color="#7a4f0a"/>
+    </linearGradient>
+    <radialGradient id="badge" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#3a3170"/>
+      <stop offset="1" stop-color="#14102e"/>
+    </radialGradient>
+    <filter id="blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+    <g id="coin">
+      <path d="M-46,0 L-46,14 A46,15 0 0 0 46,14 L46,0 Z" fill="url(#coinEdge)" stroke="#3a2405" stroke-width="3"/>
+      <ellipse cx="0" cy="0" rx="46" ry="15" fill="url(#coinFace)" stroke="#3a2405" stroke-width="3"/>
+      <ellipse cx="0" cy="0" rx="32" ry="9" fill="none" stroke="#a8761c" stroke-width="3" opacity="0.8"/>
+    </g>
+  </defs>
+
+  <!-- background tile -->
+  <rect x="8" y="8" width="496" height="496" rx="64" fill="url(#bg)"/>
+  <rect x="8" y="8" width="496" height="496" rx="64" fill="none" stroke="url(#gold)" stroke-width="10"/>
+
+  <!-- warm glow behind the book -->
+  <ellipse cx="248" cy="250" rx="190" ry="140" fill="#ffd23f" opacity="0.22" filter="url(#blur)"/>
+
+  <!-- the ledger: cover -->
+  <path d="M56,148 Q150,120 248,150 Q346,120 440,148 L440,372 Q346,346 248,376 Q150,346 56,372 Z"
+        fill="url(#cover)" stroke="#0b0918" stroke-width="8" stroke-linejoin="round"/>
+  <!-- pages -->
+  <path d="M72,140 Q160,112 248,142 L248,358 Q160,330 72,356 Z" fill="url(#pageL)" stroke="#5a3a14" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M424,140 Q336,112 248,142 L248,358 Q336,330 424,356 Z" fill="url(#pageR)" stroke="#5a3a14" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M248,142 L248,358" stroke="#5a3a14" stroke-width="5"/>
+
+  <!-- left page: written lines with a column of figures -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M96,168 Q160,150 226,170" stroke="#8a6a3a" stroke-width="5"/>
+    <path d="M96,200 Q160,182 226,202" stroke="#8a6a3a" stroke-width="5" opacity="0.7"/>
+    <path d="M96,232 Q160,214 226,234" stroke="#8a6a3a" stroke-width="5" opacity="0.7"/>
+    <path d="M96,264 Q160,246 226,266" stroke="#8a6a3a" stroke-width="5" opacity="0.7"/>
+    <path d="M96,296 Q160,278 226,298" stroke="#8a6a3a" stroke-width="5" opacity="0.7"/>
+    <path d="M168,158 L168,318" stroke="#b0412e" stroke-width="3" opacity="0.6"/>
+  </g>
+  <!-- right page: a rising bar chart -->
+  <g stroke="#5a3a14" stroke-width="3">
+    <rect x="282" y="262" width="26" height="52" rx="3" fill="#c0392b"/>
+    <rect x="320" y="236" width="26" height="80" rx="3" fill="#d9a12c"/>
+    <rect x="358" y="196" width="26" height="122" rx="3" fill="#3fa34d"/>
+  </g>
+  <path d="M276,330 Q336,316 400,330" fill="none" stroke="#8a6a3a" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- coin stack -->
+  <ellipse cx="128" cy="438" rx="70" ry="16" fill="#000" opacity="0.45" filter="url(#soft)"/>
+  <use href="#coin" x="128" y="414"/>
+  <use href="#coin" x="122" y="394"/>
+  <use href="#coin" x="132" y="374"/>
+  <use href="#coin" x="126" y="354"/>
+
+  <!-- earned / spent badge -->
+  <circle cx="394" cy="404" r="64" fill="#ffd23f" opacity="0.35" filter="url(#soft)"/>
+  <circle cx="394" cy="404" r="54" fill="url(#badge)" stroke="url(#gold)" stroke-width="7"/>
+  <path d="M372,428 L372,384 M356,398 L372,380 L388,398" fill="none" stroke="#5fd36b" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M416,380 L416,424 M400,410 L416,428 L432,410" fill="none" stroke="#ff6b5a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- sparkles -->
+  <g fill="#fff8d6">
+    <path d="M96,62 l6,20 l20,6 l-20,6 l-6,20 l-6,-20 l-20,-6 l20,-6 z"/>
+    <path d="M418,58 l4,13 l13,4 l-13,4 l-4,13 l-4,-13 l-13,-4 l13,-4 z" opacity="0.8"/>
+    <path d="M226,410 l4,13 l13,4 l-13,4 l-4,13 l-4,-13 l-13,-4 l13,-4 z" opacity="0.7"/>
+  </g>
+</svg>
