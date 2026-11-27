@@ -1,15 +1,15 @@
--- The ledger window (Summary, Items and Categories tabs), the minimap button and the addon
+-- The ledger window (Summary, Items, Categories, Profit and Compare tabs), the minimap button and the addon
 -- compartment entry. The window is built on first use.
 
 local OAL = OpcowsLedger
-local WIDTH, HEIGHT = 680, 540
+local WIDTH, HEIGHT = 760, 560
 local ROW_HEIGHT = 20
 local ICON = "Interface\\Icons\\INV_Misc_Coin_01"
 local RECENT = 200  -- how many of the latest sales and purchases the Summary tab lists
 
 local win
 local minimapButton
-local state = { tab = "summary", period = "all", from = "all", sort = "sg", desc = true }
+local state = { tab = "summary", period = "all", from = "all", sort = "sg", desc = true, who = "all" }
 
 -- widget helpers ---------------------------------------------------------------------------------
 
@@ -327,7 +327,7 @@ StaticPopupDialogs.OPCOWS_AUCTION_LEDGER_DELETE = {
 }
 
 StaticPopupDialogs.OPCOWS_AUCTION_LEDGER_CLEAR = {
-    text = "Delete all of %s's sales and purchases from the ledger?\nThis can't be undone.",
+    text = "Delete all of %s's sales, purchases and crafts from the ledger?\nThis can't be undone.",
     button1 = DELETE or "Delete",
     button2 = CANCEL or "Cancel",
     OnAccept = function() OAL.Clear() end,
@@ -801,9 +801,451 @@ local function CategoriesPanel(p)
     end
 end
 
+-- Profit tab -------------------------------------------------------------------------------------
+
+-- gold that can be less than nothing, green or red
+local function Signed(copper)
+    if math.floor(copper + 0.5) == 0 then return "0" end
+    if copper < 0 then return "|cffff6060-|r" .. OAL.Money(-copper) end
+    return OAL.Money(copper)
+end
+
+local function Margin(profit, g)
+    if g <= 0 then return "" end
+    local m = math.floor(profit / g * 100 + 0.5)
+    return (m < 0 and "|cffff6060" or "|cff40ff40") .. m .. "%|r"
+end
+
+local function ProfitLines(it)
+    local lines = {
+        { "Sold " .. it.n, OAL.Money(it.g) },
+        { "Cost", OAL.Money(it.cost) },
+        { "Profit", Signed(it.g - it.cost) },
+    }
+    if it.n > 0 then lines[#lines + 1] = { "  each, on average", Signed((it.g - it.cost) / it.n) } end
+    if it.free > 0 then
+        lines[#lines + 1] = "|cff999999" .. it.free .. " of them weren't bought (gathered, looted, crafted from "
+            .. "those, or from before the ledger), so they cost their market value.|r"
+    end
+    return lines
+end
+
+local CHART_TEXT = { hour = "%H:00", day = "%b %d", week = "Week of %b %d" }
+
+-- bars of profit over time, green up and red down from the zero line
+local function Chart(parent, width, height)
+    local c = Box(parent)
+    c:SetSize(width, height)
+    local plot = CreateFrame("Frame", nil, c)
+    plot:SetPoint("TOPLEFT", 8, -8)
+    plot:SetPoint("BOTTOMRIGHT", -8, 20)
+    c.zero = plot:CreateTexture(nil, "ARTWORK")
+    c.zero:SetColorTexture(0.6, 0.6, 0.6, 0.8)
+    c.zero:SetHeight(1)
+    c.top = Label(c, "", "GameFontDisableSmall")
+    c.top:SetPoint("TOPLEFT", 10, -8)
+    c.first = Label(c, "", "GameFontDisableSmall")
+    c.first:SetPoint("BOTTOMLEFT", 10, 6)
+    c.last = Label(c, "", "GameFontDisableSmall")
+    c.last:SetPoint("BOTTOMRIGHT", -10, 6)
+    c.last:SetJustifyH("RIGHT")
+    c.empty = Label(c, "", "GameFontDisableSmall")
+    c.empty:SetPoint("CENTER")
+    c.bars = {}
+
+    local function Bar(i)
+        local b = CreateFrame("Frame", nil, plot)
+        b:EnableMouse(true)
+        b.tex = b:CreateTexture(nil, "ARTWORK")
+        b.hl = b:CreateTexture(nil, "BACKGROUND")
+        b.hl:SetAllPoints()
+        b.hl:SetColorTexture(1, 1, 1, 0.08)
+        b.hl:Hide()
+        b:SetScript("OnEnter", function(self)
+            self.hl:Show()
+            local d = self.data
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(date(CHART_TEXT[c.unit], d.from))
+            GameTooltip:AddDoubleLine("Sold " .. d.n, OAL.Money(d.g), 1, 0.82, 0, 1, 1, 1)
+            GameTooltip:AddDoubleLine("Cost", OAL.Money(d.cost), 1, 0.82, 0, 1, 1, 1)
+            GameTooltip:AddDoubleLine("Profit", Signed(d.g - d.cost), 1, 0.82, 0, 1, 1, 1)
+            GameTooltip:Show()
+        end)
+        b:SetScript("OnLeave", function(self)
+            self.hl:Hide()
+            GameTooltip:Hide()
+        end)
+        c.bars[i] = b
+        return b
+    end
+
+    -- series = OAL.ProfitSeries's
+    function c:Set(series, title)
+        local buckets = series.buckets
+        self.unit = series.unit
+        local hi, lo, any = 0, 0, false
+        for _, d in ipairs(buckets) do
+            local p = d.g - d.cost
+            hi, lo = math.max(hi, p), math.min(lo, p)
+            if d.n > 0 then any = true end
+        end
+        local w, h = plot:GetWidth(), plot:GetHeight()
+        if w <= 0 then w, h = width - 16, height - 28 end
+        local span = hi - lo
+        if span <= 0 then span = 1 end
+        local zeroY = (-lo / span) * h  -- from the bottom
+        self.zero:ClearAllPoints()
+        self.zero:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", 0, zeroY)
+        self.zero:SetPoint("RIGHT", plot, "RIGHT")
+        local step = w / #buckets
+        for i, d in ipairs(buckets) do
+            local b = self.bars[i] or Bar(i)
+            b.data = d
+            b:ClearAllPoints()
+            b:SetPoint("BOTTOMLEFT", plot, "BOTTOMLEFT", (i - 1) * step, 0)
+            b:SetSize(step, h)
+            local p = d.g - d.cost
+            local bh = math.abs(p) / span * h
+            b.tex:ClearAllPoints()
+            b.tex:SetWidth(math.max(1, step - math.max(1, math.floor(step * 0.2))))
+            b.tex:SetHeight(math.max(1, bh))
+            if p >= 0 then
+                b.tex:SetPoint("BOTTOM", b, "BOTTOM", 0, zeroY)
+                b.tex:SetColorTexture(0.25, 0.8, 0.25, 0.9)
+            else
+                b.tex:SetPoint("TOP", b, "BOTTOM", 0, zeroY)
+                b.tex:SetColorTexture(0.9, 0.3, 0.3, 0.9)
+            end
+            b.tex:SetShown(d.n > 0)
+            b:Show()
+        end
+        for i = #buckets + 1, #self.bars do self.bars[i]:Hide() end
+        self.top:SetText((title or "Profit") .. " by the " .. self.unit .. (hi > 0 and ("  |cff999999best: "
+            .. OAL.Money(hi) .. "|r") or "") .. (lo < 0 and ("  |cff999999worst: " .. Signed(lo) .. "|r") or ""))
+        self.first:SetText(date(CHART_TEXT[self.unit], buckets[1].from))
+        self.last:SetText(date(CHART_TEXT[self.unit], buckets[#buckets].from))
+        self.empty:SetText(any and "" or "No sales in this time.")
+    end
+    return c
+end
+
+local function ProfitPanel(p)
+    state.psort, state.pdesc, state.view = "p", true, "item"
+
+    p.total = Label(p, "", "GameFontHighlight")
+    p.total:SetPoint("TOPLEFT", 4, -4)
+
+    local whoButton = Button(p, "", 120, function()
+        state.who = state.who == "all" and OAL.CharName() or "all"
+        p:Refresh()
+    end)
+    whoButton:SetPoint("TOPRIGHT", 0, 0)
+    Tooltip(whoButton, "Characters", "Count the sales of all your characters, or only this one's. The cost of "
+        .. "an item is worked out from all your characters either way, since items get mailed between them.")
+    local viewButton = Button(p, "", 100, function()
+        state.view = state.view == "item" and "category" or "item"
+        state.pick = nil
+        p:Refresh()
+    end)
+    viewButton:SetPoint("RIGHT", whoButton, "LEFT", -4, 0)
+    p.viewButton, p.whoButton = viewButton, whoButton
+    Tooltip(viewButton, "By item or by category", "List the profit of each item, or of each of your categories.")
+
+    p.table = Table(p, WIDTH - 28, 210, {
+        { title = "Item", width = 210, sort = "name" },
+        { title = "Sold", width = 56, justify = "RIGHT", sort = "n" },
+        { title = "Revenue", width = 104, justify = "RIGHT", sort = "g" },
+        { title = "Cost", width = 104, justify = "RIGHT", sort = "cost" },
+        { title = "Profit", width = 110, justify = "RIGHT", sort = "p" },
+        { title = "Margin", width = 66, justify = "RIGHT", sort = "m" },
+    }, {
+        onSort = function(key)
+            if state.psort == key then
+                state.pdesc = not state.pdesc
+            else
+                state.psort, state.pdesc = key, key ~= "name"
+            end
+            p:Refresh()
+        end,
+    })
+    p.table:SetPoint("TOPLEFT", 0, -28)
+
+    p.chart = Chart(p, WIDTH - 28, 160)
+    p.chart:SetPoint("TOPLEFT", 0, -244)
+
+    local note = Label(p, "Cost is the average paid for the item by any of your characters. Items not bought "
+        .. "cost their market value: their recent price in the ledger, else the vendor's. Crafted items cost "
+        .. "what went into them. Click a row to chart only it.", "GameFontDisableSmall")
+    note:SetPoint("BOTTOMLEFT", 4, 0)
+    note:SetPoint("RIGHT", p, "RIGHT", -4, 0)
+    note:SetWordWrap(true)
+
+    local function Sort(list)
+        local key, desc = state.psort, state.pdesc
+        local function Value(it)
+            if key == "p" then return it.g - it.cost end
+            if key == "m" then return it.g > 0 and (it.g - it.cost) / it.g or -math.huge end
+            return it[key]
+        end
+        table.sort(list, function(a, b)
+            if key ~= "name" then
+                local va, vb = Value(a), Value(b)
+                if va ~= vb then
+                    if desc then return va > vb end
+                    return va < vb
+                end
+            end
+            if key == "name" and desc then return a.name:lower() > b.name:lower() end
+            return a.name:lower() < b.name:lower()
+        end)
+    end
+
+    function p:Refresh()
+        local since = OAL.Since(state.period)
+        local items = OAL.ProfitItems(since, state.from, state.who)
+        local byCat = state.view == "category"
+        local list = {}
+        if byCat then
+            local inOne = {}
+            for _, cat in ipairs(OAL.Categories()) do
+                local sum = OAL.ProfitSum(items, cat)
+                sum.name, sum.cat = cat.name, cat
+                list[#list + 1] = sum
+                for name in pairs(cat.items) do inOne[name] = true end
+            end
+            local rest = { n = 0, g = 0, cost = 0, free = 0, name = "(Not in a category)", rest = inOne }
+            for name, it in pairs(items) do
+                if not inOne[name] then
+                    rest.n, rest.g, rest.cost, rest.free = rest.n + it.n, rest.g + it.g, rest.cost + it.cost,
+                        rest.free + it.free
+                end
+            end
+            if rest.n > 0 then list[#list + 1] = rest end
+        else
+            for _, it in pairs(items) do list[#list + 1] = it end
+        end
+        Sort(list)
+
+        -- the row whose sales the chart shows, if one was clicked
+        local pick = state.pick
+        local rows = {}
+        for _, it in ipairs(list) do
+            local key = byCat and (it.cat or "rest") or it.name
+            local profit = it.g - it.cost
+            local row = {
+                cells = { it.name, Count(it.n), OAL.Money(it.g), OAL.Money(it.cost), Signed(profit), Margin(profit, it.g) },
+                title = it.name,
+                lines = ProfitLines(it),
+                selected = pick == key,
+                onClick = function()
+                    state.pick = state.pick ~= key and key or nil
+                    p:Refresh()
+                end,
+            }
+            if not byCat then
+                row.icon = OAL.ItemIcon(it.name, it.id)
+                row.id = OAL.ItemID(it.name, it.id)
+            end
+            rows[#rows + 1] = row
+        end
+        self.table.headers[1].text:SetText(byCat and "Category" or "Item")
+        self.table:MarkSort(state.psort)
+        self.table:SetRows(rows, byCat and #OAL.Categories() == 0 and "No categories yet. Make them on the "
+            .. "Categories tab." or ("No " .. (state.from == "all" and "" or (FromText() .. " ")) .. "sales "
+            .. (state.period == "all" and "yet." or "in this time.")))
+
+        local sum = OAL.ProfitSum(items)
+        local profit = sum.g - sum.cost
+        self.total:SetText("Sold " .. OAL.Money(sum.g) .. "   Cost " .. OAL.Money(sum.cost) .. "   Profit "
+            .. Signed(profit) .. (sum.g > 0 and ("  " .. Margin(profit, sum.g)) or ""))
+        viewButton:SetText(byCat and "By category" or "By item")
+        whoButton:SetText(state.who == "all" and "All characters" or "This character")
+
+        -- the chart: everything, or the clicked row's
+        local match, title
+        if pick and byCat then
+            if pick == "rest" then
+                local inOne = {}
+                for _, cat in ipairs(OAL.Categories()) do
+                    for name in pairs(cat.items) do inOne[name] = true end
+                end
+                match = function(name) return not inOne[name] end
+                title = "Profit of items not in a category"
+            else
+                match = function(name) return pick.items[name] ~= nil end
+                title = "Profit of " .. pick.name
+            end
+        elseif pick then
+            match = function(name) return name == pick end
+            title = "Profit of " .. pick
+        end
+        self.chart:Set(OAL.ProfitSeries(state.period, state.from, state.who, match), title)
+    end
+end
+
+-- Compare tab ------------------------------------------------------------------------------------
+
+-- the category a Sell/Buy button shows, still there, or the nth one
+local function PickedCategory(key, nth)
+    local cats = OAL.Categories()
+    for _, cat in ipairs(cats) do
+        if cat == state[key] then return cat end
+    end
+    state[key] = cats[math.min(nth, #cats)]
+    return state[key]
+end
+
+local function StepCategory(key, nth, dir)
+    local cats = OAL.Categories()
+    if #cats == 0 then return end
+    state[key] = Step(cats, PickedCategory(key, nth), dir)
+end
+
+local function ComparePanel(p)
+    local half = (WIDTH - 28 - 8) / 2
+
+    local function CatButton(key, nth, text, tip)
+        local label = Label(p, text, "GameFontNormal")
+        local b = Button(p, "", 170, nil)
+        b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        b:SetScript("OnClick", function(_, button)
+            StepCategory(key, nth, button == "RightButton" and -1 or 1)
+            p:Refresh()
+        end)
+        b:SetPoint("LEFT", label, "RIGHT", 6, 0)
+        Tooltip(b, text:gsub(":", ""), tip .. " Click for the next category, right-click for the one before.")
+        return label, b
+    end
+    local sellLabel, sellButton = CatButton("sellCat", 1, "Sell:", "The category whose sales pay for the other, "
+        .. "ex: Mining.")
+    sellLabel:SetPoint("TOPLEFT", 4, -4)
+    local buyLabel, buyButton = CatButton("buyCat", 2, "Buy:", "The category you buy instead of gathering, "
+        .. "ex: Leather.")
+    buyLabel:SetPoint("LEFT", sellButton, "RIGHT", 24, 0)
+    p.sellButton, p.buyButton = sellButton, buyButton
+
+    local whoButton = Button(p, "", 120, function()
+        state.who = state.who == "all" and OAL.CharName() or "all"
+        p:Refresh()
+    end)
+    whoButton:SetPoint("TOPRIGHT", 0, 0)
+    Tooltip(whoButton, "Characters", "Count all your characters, or only this one.")
+
+    p.lines = {}
+    for i = 1, 4 do
+        local l = Label(p, "", "GameFontHighlight")
+        l:SetPoint("TOPLEFT", 4, -14 - i * 20)
+        l:SetPoint("RIGHT", p, "RIGHT", -4, 0)
+        l:SetWordWrap(false)
+        p.lines[i] = l
+    end
+
+    local tableHeight = HEIGHT - 82 - 14 - 122 - 30
+    p.sold = Table(p, half, tableHeight, {
+        { title = "Sold", width = 130 },
+        { title = "Count", width = 44, justify = "RIGHT" },
+        { title = "Earned", width = 86, justify = "RIGHT" },
+        { title = "Profit", width = 76, justify = "RIGHT" },
+    })
+    p.sold:SetPoint("TOPLEFT", 0, -122)
+    p.bought = Table(p, half, tableHeight, {
+        { title = "Bought", width = 140 },
+        { title = "Count", width = 46, justify = "RIGHT" },
+        { title = "Spent", width = 90, justify = "RIGHT" },
+        { title = "Used", width = 60, justify = "RIGHT" },
+    })
+    p.bought:SetPoint("TOPRIGHT", 0, -122)
+
+    local note = Label(p, "What you did in the time Show picks: the gold selling one category brought in, "
+        .. "against the gold buying the other cost. \"Used\" is how many went into your crafts.",
+        "GameFontDisableSmall")
+    note:SetPoint("BOTTOMLEFT", 4, 0)
+    note:SetPoint("RIGHT", p, "RIGHT", -4, 0)
+    note:SetWordWrap(true)
+
+    local function Sorted(items, key)
+        local list = {}
+        for _, it in pairs(items) do
+            if it[key] > 0 then list[#list + 1] = it end
+        end
+        table.sort(list, function(a, b)
+            local ga, gb = key == "sn" and a.sg or a.bg, key == "sn" and b.sg or b.bg
+            if ga ~= gb then return ga > gb end
+            if a[key] ~= b[key] then return a[key] > b[key] end
+            return a.name:lower() < b.name:lower()
+        end)
+        return list
+    end
+
+    function p:Refresh()
+        local sell, buy = PickedCategory("sellCat", 1), PickedCategory("buyCat", 2)
+        sellButton:SetText(sell and sell.name or "(no categories)")
+        buyButton:SetText(buy and buy.name or "(no categories)")
+        whoButton:SetText(state.who == "all" and "All characters" or "This character")
+        local since = OAL.Since(state.period)
+        local sItems, s = OAL.CompareSide(sell, since, state.from, state.who)
+        local bItems, b = OAL.CompareSide(buy, since, state.from, state.who)
+
+        local L = self.lines
+        if not sell or not buy then
+            L[1]:SetText("Make two categories on the Categories tab, ex: Mining and Leather, to compare selling")
+            L[2]:SetText("one to buying the other.")
+            L[3]:SetText("")
+            L[4]:SetText("")
+        else
+            local profit = s.sg - s.scost
+            L[1]:SetText("Selling " .. sell.name .. " earned " .. OAL.Money(s.sg) .. " |cff999999(" .. s.sn
+                .. " sold)|r, " .. Signed(profit) .. " over what it cost.")
+            L[2]:SetText("Buying " .. buy.name .. " cost " .. OAL.Money(b.bg) .. " |cff999999(" .. b.bn
+                .. " bought)|r.")
+            local net = s.sg - b.bg
+            local paid = b.bg > 0 and ("  Selling " .. sell.name .. " paid for " .. math.floor(s.sg / b.bg * 100 + 0.5)
+                .. "% of the " .. buy.name .. " you bought.") or ""
+            L[3]:SetText("Left over: " .. Signed(net) .. "." .. paid)
+            if b.un > 0 then
+                local gathered = b.ufree > 0 and (", " .. b.ufree .. " not bought (gathered, or from before the "
+                    .. "ledger), worth " .. OAL.Money(b.ufreeCost) .. " to buy") or ", all of them bought"
+                L[4]:SetText("Your crafts used " .. b.un .. " " .. buy.name .. gathered .. ".")
+            else
+                L[4]:SetText("|cff999999No " .. buy.name .. " used in crafts in this time.|r")
+            end
+        end
+
+        local rows = {}
+        for _, it in ipairs(Sorted(sItems, "sn")) do
+            rows[#rows + 1] = {
+                cells = { it.name, Count(it.sn), OAL.Money(it.sg), Signed(it.sg - it.scost) },
+                icon = OAL.ItemIcon(it.name, it.id),
+                id = OAL.ItemID(it.name, it.id),
+                title = it.name,
+                lines = { { "Sold " .. it.sn, OAL.Money(it.sg) }, { "  each, on average", OAL.Money(it.sg / it.sn) },
+                    { "Cost", OAL.Money(it.scost) } },
+            }
+        end
+        self.sold:SetRows(rows, sell and ("No " .. sell.name .. " sold in this time.") or "")
+        rows = {}
+        for _, it in ipairs(Sorted(bItems, "bn")) do
+            local lines = { { "Bought " .. it.bn, OAL.Money(it.bg) }, { "  each, on average", OAL.Money(it.bg / it.bn) } }
+            if it.un > 0 then
+                lines[#lines + 1] = { "Used in crafts", tostring(it.un) }
+                if it.ufree > 0 then lines[#lines + 1] = { "  not bought", it.ufree .. " (" .. OAL.Money(it.ufreeCost) .. ")" } end
+            end
+            rows[#rows + 1] = {
+                cells = { it.name, Count(it.bn), OAL.Money(it.bg), Count(it.un) },
+                icon = OAL.ItemIcon(it.name, it.id),
+                id = OAL.ItemID(it.name, it.id),
+                title = it.name,
+                lines = lines,
+            }
+        end
+        self.bought:SetRows(rows, buy and ("No " .. buy.name .. " bought in this time.") or "")
+    end
+end
+
 -- the window -------------------------------------------------------------------------------------
 
-local TABS = { { "summary", "Summary" }, { "items", "Items" }, { "categories", "Categories" } }
+local TABS = { { "summary", "Summary" }, { "items", "Items" }, { "categories", "Categories" }, { "profit", "Profit" },
+    { "compare", "Compare" } }
 
 local function CreateWindow()
     local f = CreateFrame("Frame", "OpcowsLedgerWindow", UIParent, "BasicFrameTemplateWithInset")
@@ -834,11 +1276,11 @@ local function CreateWindow()
     f.panels, f.tabs = {}, {}
     for i, tab in ipairs(TABS) do
         local key = tab[1]
-        local b = Button(f, tab[2], 100, function()
+        local b = Button(f, tab[2], 78, function()
             state.tab = key
             f:Refresh()
         end)
-        b:SetPoint("TOPLEFT", 14 + (i - 1) * 102, -50)
+        b:SetPoint("TOPLEFT", 14 + (i - 1) * 80, -50)
         f.tabs[key] = b
         local p = CreateFrame("Frame", nil, f)
         p:SetPoint("TOPLEFT", 14, -82)
@@ -865,7 +1307,7 @@ local function CreateWindow()
         state.from = Step(OAL.SOURCES, state.from, button == "RightButton" and -1 or 1)
         f:Refresh()
     end)
-    from:SetPoint("TOPRIGHT", -200, -50)
+    from:SetPoint("TOPRIGHT", -190, -50)
     Tooltip(from, "From", "Which sales and purchases to count: all of them, or only the auction house's, "
         .. "vendors', trades' or COD mail's. Click for the next choice, right-click for the one before.")
     local fromLabel = Label(f, "From:", "GameFontNormalSmall")
@@ -874,6 +1316,8 @@ local function CreateWindow()
     SummaryPanel(f.panels.summary)
     ItemsPanel(f.panels.items)
     CategoriesPanel(f.panels.categories)
+    ProfitPanel(f.panels.profit)
+    ComparePanel(f.panels.compare)
 
     function f:Refresh()
         who:SetText(OAL.CharName())

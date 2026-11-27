@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.0
+
+### Added
+
+- A **Profit** tab: what your sales made over what their items cost, per item or per category,
+  with the margin, and a chart of profit by the hour (today), day (7 or 30 days) or week (all time).
+  Click a row to chart only that item or category. Works across all your characters, so an item
+  bought on one and sold by another costs what was paid for it; a button narrows it to this
+  character's sales.
+- An item's cost is the average paid for it. Items not bought (gathered, looted, or from before the
+  ledger) cost their market value: their recent price in the ledger, else the vendor's.
+- Crafting is counted: what a craft used and made is seen in your bags while a profession window is
+  open, and crafted items cost what went into them. Crafts that make nothing (enchants) aren't
+  counted.
+- A **Compare** tab: pick a category you sell (ex: Mining) and one you buy (ex: Leather) and see,
+  for the time Show picks, what selling the one earned against what buying the other cost, what's
+  left over, and how much of the bought category your crafts used, with how much of that you
+  gathered yourself.
+
 ## 0.1.0
 
 ### Added

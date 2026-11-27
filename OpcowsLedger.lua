@@ -434,6 +434,7 @@ local function SellPrice(name, id)
     local price = select(11, info(id or name))
     return tonumber(price)
 end
+OAL.SellPrice = SellPrice
 
 -- How the gold of one sale or purchase is shared out when it was for several items: by their vendor
 -- price when the game knows it for all of them, otherwise evenly. The same item twice is one entry.
@@ -851,6 +852,7 @@ local function BagIDs()
     if Enum and Enum.BagIndex and Enum.BagIndex.ReagentBag then list[#list + 1] = Enum.BagIndex.ReagentBag end
     return list
 end
+OAL.BagIDs = BagIDs
 
 -- the bank's containers: the old bank and its bags, or the newer bank tabs
 local function BankIDs()
@@ -1017,10 +1019,10 @@ end
 local function Help()
     OAL.Print("/ol opens the ledger.")
     OAL.Print("/ol minimap shows or hides the minimap button.")
-    OAL.Print("/ol debug prints each sale and purchase as it's counted, and what isn't counted and why.")
+    OAL.Print("/ol debug prints each sale, purchase and craft as it's counted, and what isn't counted and why.")
     OAL.Print("/ol search <word> lists the items in your bags and bank that match, ex: /ol search mining")
     OAL.Print("/ol mail lists the auction house and COD mail in your open mailbox and what it would count.")
-    OAL.Print("/ol clear deletes this character's sales and purchases (it asks first).")
+    OAL.Print("/ol clear deletes this character's sales, purchases and crafts (it asks first).")
 end
 
 local function Slash(msg)
@@ -1101,7 +1103,8 @@ end
 -- deletes this character's log
 function OAL.Clear()
     wipe(char.log)
-    OAL.Print("Deleted " .. charKey .. "'s sales and purchases.")
+    if char.crafts then wipe(char.crafts) end
+    OAL.Print("Deleted " .. charKey .. "'s sales, purchases and crafts.")
     OAL.Changed()
 end
 
