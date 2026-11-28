@@ -1019,7 +1019,7 @@ end
 local function Help()
     OAL.Print("/ol opens the ledger.")
     OAL.Print("/ol minimap shows or hides the minimap button.")
-    OAL.Print("/ol debug prints each sale, purchase and craft as it's counted, and what isn't counted and why.")
+    OAL.Print("/ol debug prints each sale, purchase and craft as it's counted, and what isn't counted and why, until you reload.")
     OAL.Print("/ol search <word> lists the items in your bags and bank that match, ex: /ol search mining")
     OAL.Print("/ol mail lists the auction house and COD mail in your open mailbox and what it would count.")
     OAL.Print("/ol clear deletes this character's sales, purchases and crafts (it asks first).")
@@ -1088,6 +1088,7 @@ local function Load()
     db.chars = db.chars or {}
     db.cats = db.cats or {}
     db.minimap = db.minimap or {}
+    db.debug = nil -- debug lasts until a reload
     local name = UnitName("player") or "?"
     charKey = name .. " - " .. (GetRealmName() or "?")
     db.chars[charKey] = db.chars[charKey] or {}

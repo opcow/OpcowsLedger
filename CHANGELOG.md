@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+### Changed
+
+- `/ol debug` lasts until you reload or log out, so its chat lines don't stay on by mistake.
+
 ## 0.2.0
 
 ### Added
